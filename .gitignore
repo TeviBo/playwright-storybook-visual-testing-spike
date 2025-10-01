@@ -7,6 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Env Files
+*.env
+
+# Node
 node_modules
 dist
 dist-ssr
@@ -23,6 +27,7 @@ dist-ssr
 *.sln
 *.sw?
 
+# Storybook
 *storybook.log
 storybook-static
 
@@ -33,5 +38,5 @@ storybook-static
 /playwright/.cache/
 /playwright/.auth/
 
-# Test Report Files
+# Test Report
 tests/reports/*
