@@ -1,0 +1,120 @@
+# Docker Compose for Visual Testing with MinIO
+version: '3.8'
+
+services:
+  # MinIO Storage Service
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: esteban
+      MINIO_ROOT_PASSWORD: bobbiesi796
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - visual-testing-network
+
+  # Storybook Service
+  storybook:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "6006:6006"
+    environment:
+      - NODE_ENV=production
+      - STORAGE_PROVIDER=minio
+      - STORAGE_BUCKET=storybook-visual-tests-screenshots
+      - STORAGE_ENDPOINT=minio
+      - STORAGE_PORT=9000
+      - STORAGE_USE_SSL=false
+      - STORAGE_ACCESS_KEY=esteban
+      - STORAGE_SECRET_KEY=bobbiesi796
+      - STORYBOOK_URL=http://localhost:6006
+      - VISUAL_THRESHOLD=0.2
+      - MAX_DIFF_PIXELS=100
+    volumes:
+      - ./tests/logs:/app/tests/logs
+      - ./tests/reports:/app/tests/reports
+      - ./test-results:/app/test-results
+    depends_on:
+      minio:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Starting Storybook server...' &&
+        npx http-server storybook-static -p 6006 --cors &
+        echo 'Waiting for services to be ready...' &&
+        sleep 10 &&
+        echo 'Starting visual tests...' &&
+        npm run visual-tests:ci
+      "
+    networks:
+      - visual-testing-network
+
+  # Visual Testing Service (separate for better control)
+  visual-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - STORAGE_PROVIDER=minio
+      - STORAGE_BUCKET=storybook-visual-tests-screenshots
+      - STORAGE_ENDPOINT=minio
+      - STORAGE_PORT=9000
+      - STORAGE_USE_SSL=false
+      - STORAGE_ACCESS_KEY=esteban
+      - STORAGE_SECRET_KEY=bobbiesi796
+      - STORYBOOK_URL=http://storybook:6006
+      - VISUAL_THRESHOLD=0.2
+      - MAX_DIFF_PIXELS=100
+    volumes:
+      - ./tests/logs:/app/tests/logs
+      - ./tests/reports:/app/tests/reports
+      - ./test-results:/app/test-results
+    depends_on:
+      - minio
+      - storybook
+    command: >
+      sh -c "
+        echo 'Waiting for Storybook to be ready...' &&
+        while ! curl -f http://storybook:6006; do sleep 5; done &&
+        echo 'Running visual tests...' &&
+        npm run visual-tests:ci
+      "
+    networks:
+      - visual-testing-network
+    profiles:
+      - testing
+
+  # Report Server (to view results)
+  reports:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./tests/reports:/usr/share/nginx/html
+    depends_on:
+      - visual-tests
+    networks:
+      - visual-testing-network
+    profiles:
+      - reporting
+
+volumes:
+  minio_data:
+    driver: local
+
+networks:
+  visual-testing-network:
+    driver: bridge
