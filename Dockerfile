@@ -1,4 +1,3 @@
-# Visual Testing Docker Image
 FROM node:18-bullseye-slim
 
 # Install system dependencies for Playwright
@@ -42,19 +41,15 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
-
-# Install Playwright browsers
-RUN npx playwright install --with-deps
+RUN npm ci --only=production \
+    && npx playwright install --with-deps
 
 # Copy application code
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p tests/logs tests/reports tests/snapshots
-
-# Build Storybook
-RUN npm run build-storybook
+# Create necessary directories and build storybook
+RUN mkdir -p tests/logs tests/reports tests/snapshots \
+    && npm run build-storybook
 
 # Expose ports
 EXPOSE 6006 3000
@@ -67,11 +62,11 @@ ENV STORAGE_BUCKET=storybook-visual-tests-screenshots
 ENV STORAGE_ENDPOINT=minio
 ENV STORAGE_PORT=9000
 ENV STORAGE_USE_SSL=false
-ENV STORYBOOK_URL=http://localhost:6006
+ENV STORYBOOK_URL=http://192.168.0.40:6006/
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:6006 || exit 1
+  CMD curl -f "$STORYBOOK_URL" || exit 1
 
 # Default command
 CMD ["npm", "run", "visual-tests:ci"]

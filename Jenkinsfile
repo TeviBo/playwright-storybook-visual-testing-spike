@@ -23,7 +23,7 @@ pipeline {
         NODE_ENV = 'test'
 
         // Storybook configuration
-        STORYBOOK_URL = 'http://localhost:6006'
+        STORYBOOK_URL = 'http://192.168.0.40:6006'
     }
 
     options {

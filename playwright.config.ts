@@ -15,7 +15,7 @@ export default defineConfig({
     }]],
 
     use: {
-        baseURL: "http://localhost:6006",
+        baseURL: "http://192.168.0.40:6006/",
         trace: "on-first-retry",
         screenshot: "only-on-failure",
         video: process.env.CI ? "retain-on-failure" : "off",
