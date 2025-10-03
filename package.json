@@ -10,11 +10,12 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "visual-tests:local": "npx playwright test tests/visual/visual-testing.spec.ts",
-    "visual-tests:ci": "npm run build-storybook && npx playwright test tests/visual/visual-testing.spec.ts --reporter=line,allure-playwright,html",
-    "visual-tests:update-baselines": "UPDATE_BASELINES=true npm run visual-tests:local",
-    "visual-tests:serve": "npx http-server storybook-static -p 6006",
-    "reports:allure": "npx allure generate tests/reports/allure-results --output tests/reports/allure-report --clean && npx allure open tests/reports/allure-report",
+    "test:visual": "playwright test --reporter=allure-playwright",
+    "test:visual:ui": "playwright test --ui",
+    "test:visual:headed": "playwright test --headed",
+    "test:visual:debug": "playwright test --debug",
+    "test:visual:update": "playwright test --update-snapshots",
+    "reports:allure": "npx allure generate allure-results --output tests/reports/allure-report --clean && npx allure open tests/reports/allure-report",
     "reports:playwright": "npx playwright show-report tests/reports/playwright-html"
   },
   "dependencies": {
